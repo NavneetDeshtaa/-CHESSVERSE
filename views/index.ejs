@@ -9,12 +9,10 @@
     <style>
         .chessboard {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 80vmin;  /* Responsive to screen size */
-            height: 80vmin; /* Maintain aspect ratio */
-            max-width: 500px;  /* Optional: max size */
-            max-height: 500px; /* Optional: max size */
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            grid-template-rows: repeat(8, minmax(0, 1fr));
+            width: 400px;
+            height: 400px;
             transform: rotate(0deg);
         }
 
@@ -62,14 +60,32 @@
             transform: rotate(180deg);
         }
     </style>
+    
 </head>
 <body>
-    <div class="w-full h-screen flex items-center justify-center bg-zinc-900">
+    <div class="w-full h-screen flex flex-col items-center justify-center bg-zinc-900">
+        <!-- Reset Button -->
+        <button id="resetButton" class="bg-red-500 text-white p-2 rounded mb-4">
+            Reset Game
+        </button>
+
+        <!-- Chessboard -->
         <div class="chessboard w-100 h-100 bg-red-800"></div>
     </div>
 
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script 
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js" 
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" 
+      crossorigin="anonymous">
+    </script>
+
+    <script 
+       src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" 
+       integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+       crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+
     <script src="/js/chessgame.js"></script>
+
 </body>
 </html>
