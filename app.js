@@ -21,26 +21,26 @@ app.get('/', (req, res) => {
 io.on('connection', function (socket) {
     console.log('connected');
 
-    // Assigning players
+
     if (!players.white) {
         players.white = socket.id;
-        socket.emit('playerRole', 'w');  // Assign White to the first player
+        socket.emit('playerRole', 'w'); 
     } else if (!players.black) {
         players.black = socket.id;
-        socket.emit('playerRole', 'b');  // Assign Black to the second player
+        socket.emit('playerRole', 'b');  
     } else {
-        socket.emit('spectatorRole');  // Assign Spectator if there are already two players
+        socket.emit('spectatorRole');  
     }
 
-    // Resetting the game state
+ 
     socket.on('resetGame', () => {
         console.log('Resetting game...');
-        chess.reset(); // Reset the chess game state
-        io.emit('boardState', chess.fen()); // Notify all clients with the reset game state
-        io.emit('gameReset'); // Optionally notify clients to reset their interface
+        chess.reset(); 
+        io.emit('boardState', chess.fen());
+        io.emit('gameReset'); 
     });
 
-    // Handling moves
+
     socket.on('move', (move) => {
         try {
             const result = chess.move(move);
@@ -65,7 +65,7 @@ io.on('connection', function (socket) {
     });
 });
 
-// Server listens for connections
+
 server.listen(process.env.PORT || 3000, function () {
     console.log('Server is running on port 3000');
 });
