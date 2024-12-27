@@ -7,60 +7,77 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        .chessboard {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 80vmin;  /* Responsive to screen size */
-            height: 80vmin; /* Maintain aspect ratio */
-            max-width: 500px;  /* Optional: max size */
-            max-height: 500px; /* Optional: max size */
-            transform: rotate(0deg);
-        }
+.chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 80vmin;  /* Responsive to screen size */
+    height: 80vmin; /* Maintain aspect ratio */
+    max-width: 500px;  /* Optional: max size */
+    max-height: 500px; /* Optional: max size */
+    transform: rotate(0deg);  /* Default orientation */
+}
 
-        .piece.white {
-            color: white;
-            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
-        }
+.piece.white {
+    color: white;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
+}
 
-        .piece.black {
-            color: black;
-        }
+.piece.black {
+    color: black;
+}
 
-        .flipped {
-            transform: rotate(180deg);
-        }
+.flipped {
+    transform: rotate(180deg);  /* Flip the board 180 degrees */
+}
 
-        .square {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
 
-        .square.light {
-            background-color: #f0d9b5;
-        }
+.square.light {
+    background-color: #f0d9b5;
+}
 
-        .square.dark {
-            background-color: #b58863;
-        }
+.square.dark {
+    background-color: #b58863;
+}
 
-        .piece {
-            font-size: 36px;
-            cursor: pointer;
-        }
+.piece {
+    font-size: 36px;
+    cursor: pointer;
+}
 
-        .piece.draggable {
-            cursor: grab;
-        }
+.piece.draggable {
+    cursor: grab;
+}
 
-        .dragging {
-            opacity: 0.5;
-        }
+.dragging {
+    opacity: 0.5;
+}
 
-        .flipped .piece {
-            transform: rotate(180deg);
-        }
+.flipped .piece {
+    transform: rotate(180deg);  /* Flip individual pieces for player 2 */
+}
+
+#resetButton {
+    background-color: #f44336;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+#role {
+    font-size: 18px;
+    color: white;
+}
+
     </style>
 </head>
 <body>

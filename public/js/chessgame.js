@@ -3,35 +3,11 @@ const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
 let playerRole = null;  // Stores the current player's role
-let draggedPiece = null;  // Stores the currently dragged piece
-let sourceSquare = null;  // Stores the source square coordinates
-
-const getPieceUnicode = (type, color) => {
-  const unicodePieces = {
-    w: {
-      p: "♙",
-      r: "♖",
-      n: "♘",
-      b: "♗",
-      q: "♕",
-      k: "♔",
-    },
-    b: {
-      p: "♟",
-      r: "♜",
-      n: "♞",
-      b: "♝",
-      q: "♛",
-      k: "♚",
-    },
-  };
-  return unicodePieces[color][type];
-};
 
 // Function to render the board
 const renderBoard = () => {
   const board = chess.board();
-  boardElement.innerHTML = "";
+  boardElement.innerHTML = ""; // Clear the board before rendering
 
   board.forEach((row, rowIndex) => {
     row.forEach((square, squareIndex) => {
@@ -71,6 +47,13 @@ const renderBoard = () => {
       boardElement.appendChild(squareElement);
     });
   });
+
+  // Flip the board if the player is Black
+  if (playerRole === 'b') {
+    boardElement.classList.add('flipped');
+  } else {
+    boardElement.classList.remove('flipped');
+  }
 };
 
 // Listen for the playerRole event from the server
@@ -78,6 +61,8 @@ socket.on('playerRole', function(role) {
   playerRole = role;  // Set the player's role (w/b)
   console.log(`You are playing as: ${role === 'w' ? 'White' : 'Black'}`);
   document.getElementById('role').innerText = `You are playing as: ${role === 'w' ? 'White' : 'Black'}`;  // Update role on the page
+
+  renderBoard();  // Re-render the board with the correct flip
 });
 
 socket.on('spectatorRole', function() {
