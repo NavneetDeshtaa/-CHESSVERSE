@@ -57,6 +57,12 @@ const renderBoard = () => {
           e.dataTransfer.setData("text/plain", "");
         });
 
+        pieceElement.addEventListener("touchstart", (e) => {
+          draggedPiece = pieceElement;
+          sourceSquare = { row: rowIndex, col: squareIndex };
+          e.preventDefault();  // Prevent default behavior for touch
+        });
+
         squareElement.appendChild(pieceElement);
       }
 
@@ -70,13 +76,19 @@ const renderBoard = () => {
         }
       });
 
+      squareElement.addEventListener("touchstart", (e) => {
+        if (draggedPiece) {
+          handleMove(sourceSquare, { row: rowIndex, col: squareIndex });
+          e.preventDefault();  // Prevent default behavior for touch
+        }
+      });
+
       boardElement.appendChild(squareElement);
     });
   });
 
   boardElement.classList.toggle("flipped", playerRole === "b");
 };
-
 
 const handleMove = (source, target) => {
   const sourceSquare = `${String.fromCharCode(97 + source.col)}${ 8 - source.row }`;
