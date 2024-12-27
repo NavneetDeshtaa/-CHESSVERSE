@@ -4,6 +4,29 @@ const boardElement = document.querySelector(".chessboard");
 
 let playerRole = null;  // Stores the current player's role
 
+
+const getPieceUnicode = (type, color) => {
+  const unicodePieces = {
+    w: {
+      p: "♙",
+      r: "♖",
+      n: "♘",
+      b: "♗",
+      q: "♕",
+      k: "♔",
+    },
+    b: {
+      p: "♟",
+      r: "♜",
+      n: "♞",
+      b: "♝",
+      q: "♛",
+      k: "♚",
+    },
+  };
+  return unicodePieces[color][type];
+};
+
 // Function to render the board
 const renderBoard = () => {
   const board = chess.board();
