@@ -24,12 +24,12 @@ io.on('connection', function (socket) {
     // Assigning players
     if (!players.white) {
         players.white = socket.id;
-        socket.emit('playerRole', 'w');
+        socket.emit('playerRole', 'w');  // Assign White to the first player
     } else if (!players.black) {
         players.black = socket.id;
-        socket.emit('playerRole', 'b');
+        socket.emit('playerRole', 'b');  // Assign Black to the second player
     } else {
-        socket.emit('spectatorRole');
+        socket.emit('spectatorRole');  // Assign Spectator if there are already two players
     }
 
     // Resetting the game state
