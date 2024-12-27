@@ -25,9 +25,11 @@ io.on('connection', function (socket) {
     if (!players.white) {
         players.white = socket.id;
         socket.emit('playerRole', 'w');  // Assign White to the first player
+        socket.broadcast.emit('gameStatus', { white: true });
     } else if (!players.black) {
         players.black = socket.id;
         socket.emit('playerRole', 'b');  // Assign Black to the second player
+        socket.broadcast.emit('gameStatus', { black: true });
     } else {
         socket.emit('spectatorRole');  // Assign Spectator if there are already two players
     }
@@ -59,8 +61,10 @@ io.on('connection', function (socket) {
     socket.on('disconnect', () => {
         if (socket.id === players.white) {
             delete players.white;
+            io.emit('gameStatus', { white: false });
         } else if (socket.id === players.black) {
             delete players.black;
+            io.emit('gameStatus', { black: false });
         }
     });
 });
