@@ -73,43 +73,43 @@ const renderBoard = () => {
   });
 };
 
+// Listen for the playerRole event from the server
 socket.on('playerRole', function(role) {
   playerRole = role;  // Set the player's role (w/b)
   console.log(`You are playing as: ${role === 'w' ? 'White' : 'Black'}`);
+  document.getElementById('role').innerText = `You are playing as: ${role === 'w' ? 'White' : 'Black'}`;  // Update role on the page
 });
 
 socket.on('spectatorRole', function() {
   playerRole = 'spectator';  // Set role as spectator
   console.log("You are a Spectator. You cannot make moves.");
+  document.getElementById('role').innerText = 'You are a Spectator. You cannot make moves.';
 });
 
-socket.on('gameStatus', function(status) {
-  if (status.white) {
-    console.log("Player 1 (White) is connected.");
-  } else if (status.black) {
-    console.log("Player 2 (Black) is connected.");
-  }
-});
-
+// Listen for the reset event from the server
 socket.on('gameReset', function() {
   console.log("Game has been reset.");
   chess.reset();  // Reset the chess game state on the client
   renderBoard();  // Re-render the initial chessboard
 });
 
+// Listen for board updates
 socket.on('boardState', function (fen) {
   chess.load(fen);
   renderBoard();
 });
 
+// Function to reset the game (triggered by user input, like a button)
 const resetGame = () => {
   if (playerRole !== 'spectator') {  // Only allow the players to reset the game
     socket.emit('resetGame');  // Notify the server to reset the game
   }
 };
 
+// Adding a button for the client to trigger the reset
 document.getElementById('resetButton').addEventListener('click', resetGame);
 
+// Function to handle piece movement (as before)
 const handleMove = (source, target) => {
   if (playerRole === 'spectator') {
     console.log("Spectators cannot make moves.");
