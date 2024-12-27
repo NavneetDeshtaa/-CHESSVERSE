@@ -7,17 +7,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+/* Chessboard container styles */
 .chessboard {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
     width: 80vmin;  /* Responsive to screen size */
     height: 80vmin; /* Maintain aspect ratio */
-    max-width: 500px;  /* Optional: max size */
-    max-height: 500px; /* Optional: max size */
+    max-width: 100vw; /* Ensure it doesn't overflow */
+    max-height: 100vw; /* Maintain aspect ratio */
+    min-width: 300px;  /* Minimum width for smaller screens */
+    min-height: 300px; /* Minimum height for smaller screens */
     transform: rotate(0deg);  /* Default orientation */
+    margin: 0 auto;  /* Center the chessboard */
 }
 
+/* White and black pieces styling */
 .piece.white {
     color: white;
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
@@ -27,17 +32,21 @@
     color: black;
 }
 
+/* Flipping the board for Player 2 */
 .flipped {
     transform: rotate(180deg);  /* Flip the board 180 degrees */
 }
 
+/* Individual squares in the chessboard */
 .square {
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    aspect-ratio: 1;  /* Maintain square aspect ratio for each square */
 }
 
+/* Light and dark squares */
 .square.light {
     background-color: #f0d9b5;
 }
@@ -46,23 +55,28 @@
     background-color: #b58863;
 }
 
+/* Piece styling */
 .piece {
-    font-size: 36px;
+    font-size: 3vw;  /* Responsive font size based on screen width */
     cursor: pointer;
 }
 
+/* Styling for draggable pieces */
 .piece.draggable {
     cursor: grab;
 }
 
+/* Visual feedback for dragging pieces */
 .dragging {
     opacity: 0.5;
 }
 
+/* Flipping pieces for Player 2 */
 .flipped .piece {
-    transform: rotate(180deg);  /* Flip individual pieces for player 2 */
+    transform: rotate(180deg);  /* Flip individual pieces for Player 2 */
 }
 
+/* Reset Button Styling */
 #resetButton {
     background-color: #f44336;
     color: white;
@@ -71,11 +85,72 @@
     font-size: 16px;
     cursor: pointer;
     margin-bottom: 20px;
+    max-width: 200px;  /* Make sure it fits on smaller screens */
+    width: 100%;  /* Ensure it stretches to fit available width */
 }
 
+/* Role display text styling */
 #role {
-    font-size: 18px;
+    font-size: 1.2rem;
     color: white;
+    margin-bottom: 20px;
+}
+
+/* Body and layout adjustments */
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #1a1a1a;
+    flex-direction: column;
+}
+
+/* Flexbox to center content properly */
+.w-full {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .chessboard {
+        width: 90vmin;  /* Slightly reduce chessboard size for small screens */
+        height: 90vmin;
+    }
+
+    .piece {
+        font-size: 8vw;  /* Adjust piece size for smaller screens */
+    }
+
+    #role {
+        font-size: 1rem;  /* Reduce font size for the role text */
+    }
+
+    #resetButton {
+        font-size: 14px;  /* Slightly reduce button size on mobile */
+    }
+}
+
+@media (max-width: 400px) {
+    .chessboard {
+        width: 95vmin;  /* Further reduce chessboard size for very small screens */
+        height: 95vmin;
+    }
+
+    .piece {
+        font-size: 10vw;  /* Further adjust piece size for very small screens */
+    }
+
+    #role {
+        font-size: 0.9rem;  /* Adjust font size to fit mobile screens */
+    }
+
+    #resetButton {
+        font-size: 12px;  /* Adjust font size for very small screens */
+    }
 }
 
     </style>
