@@ -3,14 +3,19 @@
 This is a real-time multiplayer chess game built using Node.js, Express, and Socket.IO. The project allows players to engage in interactive chess matches through a simple and intuitive interface.
 
 Features
+
 Real-Time Gameplay: Experience live multiplayer matches powered by Socket.IO.
+
 Intuitive Interface: Play chess with an easy-to-use and responsive interface.
+
 Lightweight Design: A minimalistic approach to enjoy chess without any unnecessary distractions.
 
 ## Technology Stack
 
 Backend: Node.js and Express
+
 Frontend: EJS for templating and JavaScript for dynamic interactions
+
 WebSockets: Socket.IO for real-time communication
 
 
