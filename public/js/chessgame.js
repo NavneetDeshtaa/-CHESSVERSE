@@ -2,6 +2,29 @@ const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
+
+const getPieceUnicode = (type, color) => {
+  const unicodePieces = {
+    w: {
+      p: "♙",
+      r: "♖",
+      n: "♘",
+      b: "♗",
+      q: "♕",
+      k: "♔",
+    },
+    b: {
+      p: "♟",
+      r: "♜",
+      n: "♞",
+      b: "♝",
+      q: "♛",
+      k: "♚",
+    },
+  };
+  return unicodePieces[color][type];
+};
+
 // Function to render the board
 const renderBoard = () => {
     const board = chess.board();
