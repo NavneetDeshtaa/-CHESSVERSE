@@ -24,7 +24,6 @@ WebSockets: Socket.IO for real-time communication
 HOME PAGE :
 ![brave_screenshot_chess-game-1mz3 onrender com (1)](https://github.com/user-attachments/assets/01c7b529-da76-4182-9967-c21c49491657)
 
-![brave_screenshot_chess-game-1mz3 onrender com](https://github.com/user-attachments/assets/650d44d0-8071-4744-bcce-027db0a31240)
 
 
 ## Demo
