@@ -29,7 +29,7 @@ HOME PAGE :
 
 ## Demo
 
-[https://gitscout.onrender.com](https://chess-game-1mz3.onrender.com)
+[[https://gitscout.onrender.com](https://chess-game-1mz3.onrender.com)](https://chess-game-1mz3.onrender.com)
 
 ## How to Run
 1. Clone this repository.
