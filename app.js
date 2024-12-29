@@ -6,10 +6,15 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = socket(server);
+const io = socket(server, {
+    cors: {
+        origin: "https://chess-game-1mz3.onrender.com", 
+        methods: ["GET", "POST"],
+    },
+});
 
 const chess = new Chess();
-let players = {}; 
+let players = {};
 
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
@@ -29,63 +34,41 @@ io.on('connection', (socket) => {
         players.black = socket.id;
         socket.emit('playerRole', { role: 'b', message: 'You are Black. Waiting for White to make the first move.' });
 
-        // Notify White it's their turn to move
         io.to(players.white).emit('gameMessage', 'Your turn.');
     } else {
         socket.emit('playerRole', { role: 'spectator', message: 'You are a Spectator. Watch the game unfold!' });
     }
 
-    // Send the current board state to the new connection
     socket.emit('boardState', chess.fen());
 
-    // Handle player moves
     socket.on('move', (move) => {
-        const isPlayerTurn = 
-            (socket.id === players.white && chess.turn() === 'w') ||
-            (socket.id === players.black && chess.turn() === 'b');
+        try {
+            const isPlayerTurn = 
+                (socket.id === players.white && chess.turn() === 'w') ||
+                (socket.id === players.black && chess.turn() === 'b');
 
-        if (isPlayerTurn) {
-            const result = chess.move(move);
-            if (result) {
-                io.emit('boardState', chess.fen());
+            if (isPlayerTurn) {
+                const result = chess.move(move);
+                if (result) {
+                    io.emit('boardState', chess.fen());
 
-                const currentPlayer = chess.turn() === 'w' ? players.white : players.black;
-                const waitingPlayer = chess.turn() === 'w' ? players.black : players.white;
+                    const currentPlayer = chess.turn() === 'w' ? players.white : players.black;
+                    const waitingPlayer = chess.turn() === 'w' ? players.black : players.white;
 
-                io.to(currentPlayer).emit('gameMessage', 'Your turn.');
-                io.to(waitingPlayer).emit('gameMessage', 'Waiting for the other player to move.');
+                    io.to(currentPlayer).emit('gameMessage', 'Your turn.');
+                    io.to(waitingPlayer).emit('gameMessage', 'Waiting for the other player to move.');
+                } else {
+                    socket.emit('gameMessage', 'Invalid move. Try again.');
+                }
             } else {
-                socket.emit('gameMessage', 'Invalid move. Try again.');
+                socket.emit('gameMessage', 'It is not your turn.');
             }
-        } else {
-            socket.emit('gameMessage', 'It is not your turn.');
+        } catch (err) {
+            console.error('Error processing move:', err);
+            socket.emit('gameMessage', 'An error occurred while processing your move.');
         }
     });
 
-    // Handle game reset requests
-    socket.on('resetGameRequest', () => {
-        if (socket.id === players.white || socket.id === players.black) {
-            const otherPlayer = socket.id === players.white ? players.black : players.white;
-            io.to(otherPlayer).emit('resetRequest', socket.id);
-        }
-    });
-
-    socket.on('resetGameResponse', (response) => {
-        const otherPlayer = socket.id === players.white ? players.black : players.white;
-
-        if (response === 'accept') {
-            chess.reset();
-            io.emit('boardState', chess.fen());
-            io.emit('gameReset', 'The game has been reset.');
-            io.to(players.white).emit('gameMessage', 'Your turn.');
-            io.to(players.black).emit('gameMessage', 'Waiting for White to move.');
-        } else if (response === 'reject') {
-            io.to(socket.id).emit('gameMessage', 'You rejected the reset request.');
-            io.to(otherPlayer).emit('gameMessage', 'Your reset request was rejected by the other player.');
-        }
-    });
-
-    // Handle player disconnections
     socket.on('disconnect', () => {
         console.log('Disconnected:', socket.id);
 
@@ -106,5 +89,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(process.env.PORT || 3000, () => {
-    console.log('Server is running on port 3000');
+    console.log('Server is running on port', process.env.PORT || 3000);
 });
