@@ -69,6 +69,22 @@ io.on('connection', (socket) => {
         }
     });
 
+    // New socket event listeners for reset functionality
+    socket.on('resetGameRequest', () => {
+        const otherPlayer = socket.id === players.white ? players.black : players.white;
+        if (otherPlayer) {
+            io.to(otherPlayer).emit('resetRequest', socket.id);
+        }
+    });
+
+    socket.on('resetGameResponse', (response) => {
+        if (response === 'accept') {
+            chess.reset();
+            io.emit('boardState', chess.fen());
+            io.emit('gameReset', 'The game has been reset.');
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Disconnected:', socket.id);
 
