@@ -26,7 +26,7 @@ HOME PAGE :
 
 
 
-## Demo
+## :link: Demo
 
 https://chess-game-1mz3.onrender.com
 
