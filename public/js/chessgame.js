@@ -40,7 +40,7 @@ const renderBoard = () => {
           if (
             playerRole &&
             ((playerRole === "w" && square.color === "w") ||
-              (playerRole === "b" && square.color === "b"))
+             (playerRole === "b" && square.color === "b"))
           ) {
             draggedPiece = pieceElement;
             sourceSquare = { row: rowIndex, col: squareIndex };
@@ -62,17 +62,10 @@ const renderBoard = () => {
     });
   });
 
-  if (playerRole === "b") {
-    boardElement.classList.add("flipped");
-  } else {
-    boardElement.classList.remove("flipped");
-  }
+  boardElement.classList.toggle("flipped", playerRole === "b");
 
-  if (playerRole === "spectator") {
-    document.getElementById("resetButton").style.display = "none";
-  } else {
-    document.getElementById("resetButton").style.display = "block";
-  }
+  document.getElementById("resetButton").style.display =
+    playerRole === "spectator" ? "none" : "block";
 };
 
 socket.on("playerRole", function (data) {
@@ -82,18 +75,10 @@ socket.on("playerRole", function (data) {
     roleElement.innerText = "Waiting for another player...";
   } else if (playerRole === "b") {
     roleElement.innerText = "Waiting for White player to make their move.";
-    socket.emit("updatePlayerMessages", {
-      whiteMessage: "Your turn.",
-      blackMessage: "Waiting for White player to make their move.",
-    });
   } else if (playerRole === "spectator") {
     roleElement.innerText = "You are a spectator. Watch the game unfold!";
   }
   renderBoard();
-});
-
-socket.on("updateMessages", (messages) => {
-  roleElement.innerText = messages[playerRole] || "";
 });
 
 socket.on("boardState", function (fen) {
@@ -124,7 +109,7 @@ socket.on("gameMessage", function (message) {
   roleElement.innerText = message;
 });
 
-socket.on("resetRequest", (requestingPlayer) => {
+socket.on("resetRequest", () => {
   if (playerRole !== "spectator") {
     const confirmationDiv = document.createElement("div");
     confirmationDiv.classList.add("confirmation-container");
@@ -162,12 +147,8 @@ document.getElementById("resetButton").addEventListener("click", resetGame);
 const handleMove = (source, target) => {
   if (playerRole === "spectator") return;
 
-  const sourceSquare = `${String.fromCharCode(
-    97 + source.col
-  )}${8 - source.row}`;
-  const targetSquare = `${String.fromCharCode(
-    97 + target.col
-  )}${8 - target.row}`;
+  const sourceSquare = `${String.fromCharCode(97 + source.col)}${8 - source.row}`;
+  const targetSquare = `${String.fromCharCode(97 + target.col)}${8 - target.row}`;
 
   socket.emit("move", { from: sourceSquare, to: targetSquare, promotion: "q" });
 
