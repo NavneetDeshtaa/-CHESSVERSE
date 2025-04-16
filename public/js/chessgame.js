@@ -135,6 +135,7 @@ const checkGameOver = () => {
 };
 
 const displayGameOverModal = (message) => {
+  // Avoid showing multiple modals
   if (document.getElementById("gameOverModal")) return;
 
   const modalOverlay = document.createElement("div");
@@ -143,20 +144,30 @@ const displayGameOverModal = (message) => {
 
   const modalContent = document.createElement("div");
   modalContent.classList.add("modal-content");
+
+  let playAgainButtonHTML = "";
+
+  if (playerRole !== "spectator") {
+    playAgainButtonHTML = `<button id="playAgainButton">Play Again</button>`;
+  }
+
   modalContent.innerHTML = `
     <p>${message}</p>
-    <button id="newGameButton">Start New Game</button>
+    ${playAgainButtonHTML}
   `;
+
   modalOverlay.appendChild(modalContent);
   document.body.appendChild(modalOverlay);
 
-  document.getElementById("newGameButton").addEventListener("click", () => {
-    socket.emit("resetGameRequest");
-    document.body.removeChild(modalOverlay);
-    roleElement.innerText =
-      "Waiting for the other player to accept the reset request...";
-  });
+  if (playerRole !== "spectator") {
+    document.getElementById("playAgainButton").addEventListener("click", () => {
+      socket.emit("resetGameRequest");
+      roleElement.innerText =
+        "Waiting for the other player to accept the reset request...";
+    });
+  }
 };
+
 
 const handleMove = (source, target) => {
   if (playerRole === "spectator") return;
@@ -205,7 +216,13 @@ socket.on("gameReset", function (message) {
   roleElement.innerText = message;
   renderBoard();
   resetMessageDisplayed = true;
+
+  const existingModal = document.getElementById("gameOverModal");
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
 });
+
 
 socket.on("gameMessage", function (message) {
   roleElement.innerText = message;
