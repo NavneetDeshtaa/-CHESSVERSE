@@ -6,8 +6,8 @@ const roleElement = document.getElementById("role");
 let playerRole = null;
 let resetRequestPending = false;
 let resetMessageDisplayed = false;
-let selectedSquareCoords = null; 
-let legalMoves = []; 
+let selectedSquareCoords = null;
+let legalMoves = [];
 
 const getPieceUnicode = (type, color) => {
   const unicodePieces = {
@@ -24,10 +24,14 @@ const getAlgebraic = (row, col) => {
 const renderBoard = () => {
   const board = chess.board();
   boardElement.innerHTML = "";
-
   if (selectedSquareCoords) {
-    const sourceAlg = getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col);
-    legalMoves = chess.moves({ square: sourceAlg, verbose: true }).map(move => move.to);
+    const sourceAlg = getAlgebraic(
+      selectedSquareCoords.row,
+      selectedSquareCoords.col
+    );
+    legalMoves = chess
+      .moves({ square: sourceAlg, verbose: true })
+      .map((move) => move.to);
   } else {
     legalMoves = [];
   }
@@ -35,10 +39,12 @@ const renderBoard = () => {
   board.forEach((row, rowIndex) => {
     row.forEach((square, colIndex) => {
       const squareElement = document.createElement("div");
-      squareElement.classList.add("square", (rowIndex + colIndex) % 2 === 0 ? "light" : "dark");
+      squareElement.classList.add(
+        "square",
+        (rowIndex + colIndex) % 2 === 0 ? "light" : "dark"
+      );
       squareElement.dataset.row = rowIndex;
       squareElement.dataset.col = colIndex;
-
       if (
         selectedSquareCoords &&
         selectedSquareCoords.row === rowIndex &&
@@ -54,7 +60,10 @@ const renderBoard = () => {
 
       if (square) {
         const pieceElement = document.createElement("div");
-        pieceElement.classList.add("piece", square.color === "w" ? "white" : "black");
+        pieceElement.classList.add(
+          "piece",
+          square.color === "w" ? "white" : "black"
+        );
         pieceElement.innerText = getPieceUnicode(square.type, square.color);
         squareElement.appendChild(pieceElement);
       }
@@ -62,15 +71,19 @@ const renderBoard = () => {
       squareElement.addEventListener("click", () => {
         const clickedSquare = {
           row: parseInt(squareElement.dataset.row),
-          col: parseInt(squareElement.dataset.col)
+          col: parseInt(squareElement.dataset.col),
         };
-
-        const clickedSquareAlg = getAlgebraic(clickedSquare.row, clickedSquare.col);
+        const clickedSquareAlg = getAlgebraic(
+          clickedSquare.row,
+          clickedSquare.col
+        );
 
         if (!selectedSquareCoords) {
-          if (square && playerRole &&
-              ((playerRole === "w" && square.color === "w") ||
-               (playerRole === "b" && square.color === "b"))
+          if (
+            square &&
+            playerRole &&
+            ((playerRole === "w" && square.color === "w") ||
+              (playerRole === "b" && square.color === "b"))
           ) {
             selectedSquareCoords = clickedSquare;
             renderBoard();
@@ -84,20 +97,19 @@ const renderBoard = () => {
             renderBoard();
             return;
           }
-
-          if (square && playerRole &&
-              ((playerRole === "w" && square.color === "w") ||
-               (playerRole === "b" && square.color === "b"))
+          if (
+            square &&
+            playerRole &&
+            ((playerRole === "w" && square.color === "w") ||
+              (playerRole === "b" && square.color === "b"))
           ) {
             selectedSquareCoords = clickedSquare;
             renderBoard();
             return;
           }
-
           if (!legalMoves.includes(clickedSquareAlg)) {
             return;
           }
-
           handleMove(selectedSquareCoords, clickedSquare);
           selectedSquareCoords = null;
           renderBoard();
@@ -111,11 +123,57 @@ const renderBoard = () => {
   boardElement.classList.toggle("flipped", playerRole === "b");
   document.getElementById("resetButton").style.display =
     playerRole === "spectator" ? "none" : "block";
+
+  checkGameOver();
+};
+
+const checkGameOver = () => {
+  if (chess.in_checkmate()) {
+    const winner = chess.turn() === "w" ? "Black" : "White";
+    displayGameOverModal(`Checkmate! ${winner} wins!`);
+  }
+};
+
+const displayGameOverModal = (message) => {
+  if (document.getElementById("gameOverModal")) return;
+
+  const modalOverlay = document.createElement("div");
+  modalOverlay.id = "gameOverModal";
+  modalOverlay.classList.add("modal-overlay");
+
+  const modalContent = document.createElement("div");
+  modalContent.classList.add("modal-content");
+  modalContent.innerHTML = `
+    <p>${message}</p>
+    <button id="newGameButton">Start New Game</button>
+  `;
+  modalOverlay.appendChild(modalContent);
+  document.body.appendChild(modalOverlay);
+
+  document.getElementById("newGameButton").addEventListener("click", () => {
+    socket.emit("resetGameRequest");
+    document.body.removeChild(modalOverlay);
+    roleElement.innerText =
+      "Waiting for the other player to accept the reset request...";
+  });
+};
+
+const handleMove = (source, target) => {
+  if (playerRole === "spectator") return;
+
+  const sourceSquare = getAlgebraic(source.row, source.col);
+  const targetSquare = getAlgebraic(target.row, target.col);
+
+  socket.emit("move", { from: sourceSquare, to: targetSquare, promotion: "q" });
+
+  if (resetMessageDisplayed) {
+    resetMessageDisplayed = false;
+    roleElement.innerText = "";
+  }
 };
 
 socket.on("playerRole", function (data) {
   playerRole = data.role;
-
   if (playerRole === "w") {
     roleElement.innerText = "Waiting for another player...";
   } else if (playerRole === "b") {
@@ -129,7 +187,6 @@ socket.on("playerRole", function (data) {
 socket.on("boardState", function (fen) {
   chess.load(fen);
   renderBoard();
-
   const currentTurn = chess.turn();
   if (
     (playerRole === "w" && currentTurn === "w") ||
@@ -152,6 +209,10 @@ socket.on("gameReset", function (message) {
 
 socket.on("gameMessage", function (message) {
   roleElement.innerText = message;
+});
+
+socket.on("gameOver", (message) => {
+  displayGameOverModal(message);
 });
 
 socket.on("resetRequest", () => {
@@ -188,19 +249,5 @@ const resetGame = () => {
 };
 
 document.getElementById("resetButton").addEventListener("click", resetGame);
-
-const handleMove = (source, target) => {
-  if (playerRole === "spectator") return;
-
-  const sourceSquare = getAlgebraic(source.row, source.col);
-  const targetSquare = getAlgebraic(target.row, target.col);
-
-  socket.emit("move", { from: sourceSquare, to: targetSquare, promotion: "q" });
-
-  if (resetMessageDisplayed) {
-    resetMessageDisplayed = false;
-    roleElement.innerText = "";
-  }
-};
 
 renderBoard();
