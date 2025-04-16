@@ -2,11 +2,12 @@ const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 const roleElement = document.getElementById("role");
+
 let playerRole = null;
 let resetRequestPending = false;
 let resetMessageDisplayed = false;
-let draggedPiece = null;
-let sourceSquare = null;
+let selectedSquareCoords = null; 
+let legalMoves = []; 
 
 const getPieceUnicode = (type, color) => {
   const unicodePieces = {
@@ -16,45 +17,90 @@ const getPieceUnicode = (type, color) => {
   return unicodePieces[color][type];
 };
 
+const getAlgebraic = (row, col) => {
+  return `${String.fromCharCode(97 + col)}${8 - row}`;
+};
+
 const renderBoard = () => {
   const board = chess.board();
   boardElement.innerHTML = "";
+
+  if (selectedSquareCoords) {
+    const sourceAlg = getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col);
+    legalMoves = chess.moves({ square: sourceAlg, verbose: true }).map(move => move.to);
+  } else {
+    legalMoves = [];
+  }
+
   board.forEach((row, rowIndex) => {
-    row.forEach((square, squareIndex) => {
+    row.forEach((square, colIndex) => {
       const squareElement = document.createElement("div");
-      squareElement.classList.add(
-        "square",
-        (rowIndex + squareIndex) % 2 === 0 ? "light" : "dark"
-      );
+      squareElement.classList.add("square", (rowIndex + colIndex) % 2 === 0 ? "light" : "dark");
+      squareElement.dataset.row = rowIndex;
+      squareElement.dataset.col = colIndex;
+
+      if (
+        selectedSquareCoords &&
+        selectedSquareCoords.row === rowIndex &&
+        selectedSquareCoords.col === colIndex
+      ) {
+        squareElement.classList.add("selected");
+      }
+
+      const currentSquareAlg = getAlgebraic(rowIndex, colIndex);
+      if (legalMoves.includes(currentSquareAlg)) {
+        squareElement.classList.add("legal-move");
+      }
 
       if (square) {
         const pieceElement = document.createElement("div");
-        pieceElement.classList.add(
-          "piece",
-          square.color === "w" ? "white" : "black"
-        );
+        pieceElement.classList.add("piece", square.color === "w" ? "white" : "black");
         pieceElement.innerText = getPieceUnicode(square.type, square.color);
-        pieceElement.draggable = true;
-
-        pieceElement.addEventListener("dragstart", (e) => {
-          if (
-            playerRole &&
-            ((playerRole === "w" && square.color === "w") ||
-             (playerRole === "b" && square.color === "b"))
-          ) {
-            draggedPiece = pieceElement;
-            sourceSquare = { row: rowIndex, col: squareIndex };
-            e.dataTransfer.setData("text/plain", "");
-          }
-        });
-
         squareElement.appendChild(pieceElement);
       }
 
-      squareElement.addEventListener("dragover", (e) => e.preventDefault());
-      squareElement.addEventListener("drop", () => {
-        if (draggedPiece && playerRole) {
-          handleMove(sourceSquare, { row: rowIndex, col: squareIndex });
+      squareElement.addEventListener("click", () => {
+        const clickedSquare = {
+          row: parseInt(squareElement.dataset.row),
+          col: parseInt(squareElement.dataset.col)
+        };
+
+        const clickedSquareAlg = getAlgebraic(clickedSquare.row, clickedSquare.col);
+
+        if (!selectedSquareCoords) {
+          if (square && playerRole &&
+              ((playerRole === "w" && square.color === "w") ||
+               (playerRole === "b" && square.color === "b"))
+          ) {
+            selectedSquareCoords = clickedSquare;
+            renderBoard();
+          }
+        } else {
+          if (
+            selectedSquareCoords.row === clickedSquare.row &&
+            selectedSquareCoords.col === clickedSquare.col
+          ) {
+            selectedSquareCoords = null;
+            renderBoard();
+            return;
+          }
+
+          if (square && playerRole &&
+              ((playerRole === "w" && square.color === "w") ||
+               (playerRole === "b" && square.color === "b"))
+          ) {
+            selectedSquareCoords = clickedSquare;
+            renderBoard();
+            return;
+          }
+
+          if (!legalMoves.includes(clickedSquareAlg)) {
+            return;
+          }
+
+          handleMove(selectedSquareCoords, clickedSquare);
+          selectedSquareCoords = null;
+          renderBoard();
         }
       });
 
@@ -63,7 +109,6 @@ const renderBoard = () => {
   });
 
   boardElement.classList.toggle("flipped", playerRole === "b");
-
   document.getElementById("resetButton").style.display =
     playerRole === "spectator" ? "none" : "block";
 };
@@ -147,8 +192,8 @@ document.getElementById("resetButton").addEventListener("click", resetGame);
 const handleMove = (source, target) => {
   if (playerRole === "spectator") return;
 
-  const sourceSquare = `${String.fromCharCode(97 + source.col)}${8 - source.row}`;
-  const targetSquare = `${String.fromCharCode(97 + target.col)}${8 - target.row}`;
+  const sourceSquare = getAlgebraic(source.row, source.col);
+  const targetSquare = getAlgebraic(target.row, target.col);
 
   socket.emit("move", { from: sourceSquare, to: targetSquare, promotion: "q" });
 
