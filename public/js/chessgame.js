@@ -1,14 +1,12 @@
 const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
-const roleElement = document.getElementById("role");
-
+const statusEl = document.getElementById("role");
 let playerRole = null;
-let resetRequestPending = false;
-let resetMessageDisplayed = false;
 let selectedSquareCoords = null;
 let legalMoves = [];
 
+// Map piece types to Unicode
 const getPieceUnicode = (type, color) => {
   const unicodePieces = {
     w: { p: "♙", r: "♖", n: "♘", b: "♗", q: "♕", k: "♔" },
@@ -17,106 +15,63 @@ const getPieceUnicode = (type, color) => {
   return unicodePieces[color][type];
 };
 
-const getAlgebraic = (row, col) => {
-  return `${String.fromCharCode(97 + col)}${8 - row}`;
-};
+// Convert board indices to algebraic notation
+const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
 
-const renderBoard = () => {
-  const board = chess.board();
-  boardElement.innerHTML = "";
-  if (selectedSquareCoords) {
-    const sourceAlg = getAlgebraic(
-      selectedSquareCoords.row,
-      selectedSquareCoords.col
-    );
-    legalMoves = chess
-      .moves({ square: sourceAlg, verbose: true })
-      .map((move) => move.to);
-  } else {
-    legalMoves = [];
+// Update status text based on turn
+function updateStatus() {
+  if (chess.game_over()) {
+    if (chess.in_draw()) {
+      statusEl.textContent = "Game over - Draw";
+    } else {
+      statusEl.textContent = "Game over - Checkmate";
+    }
+    return;
   }
+  
+  const turn = chess.turn();
+  if (playerRole === turn) {
+    statusEl.textContent = "Your turn – Make your move!";
+  } else if (playerRole === "spectator") {
+    statusEl.textContent = "You are a spectator. Watching the game.";
+  } else if (playerRole) {
+    statusEl.textContent = "Waiting for opponent's move…";
+  }
+}
+
+// Render the chessboard UI
+const renderBoard = () => {
+  boardElement.innerHTML = "";
+  const board = chess.board();
+
+  legalMoves = selectedSquareCoords
+    ? chess.moves({ square: getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col), verbose: true })
+        .map(m => m.to)
+    : [];
 
   board.forEach((row, rowIndex) => {
     row.forEach((square, colIndex) => {
-      const squareElement = document.createElement("div");
-      squareElement.classList.add(
-        "square",
-        (rowIndex + colIndex) % 2 === 0 ? "light" : "dark"
-      );
-      squareElement.dataset.row = rowIndex;
-      squareElement.dataset.col = colIndex;
-      if (
-        selectedSquareCoords &&
-        selectedSquareCoords.row === rowIndex &&
-        selectedSquareCoords.col === colIndex
-      ) {
-        squareElement.classList.add("selected");
-      }
+      const sq = document.createElement("div");
+      sq.className = `square ${(rowIndex + colIndex) % 2 === 0 ? "light" : "dark"}`;
+      sq.dataset.row = rowIndex;
+      sq.dataset.col = colIndex;
 
-      const currentSquareAlg = getAlgebraic(rowIndex, colIndex);
-      if (legalMoves.includes(currentSquareAlg)) {
-        squareElement.classList.add("legal-move");
+      if (selectedSquareCoords?.row === rowIndex && selectedSquareCoords?.col === colIndex) {
+        sq.classList.add("selected");
+      }
+      if (legalMoves.includes(getAlgebraic(rowIndex, colIndex))) {
+        sq.classList.add("legal-move");
       }
 
       if (square) {
-        const pieceElement = document.createElement("div");
-        pieceElement.classList.add(
-          "piece",
-          square.color === "w" ? "white" : "black"
-        );
-        pieceElement.innerText = getPieceUnicode(square.type, square.color);
-        squareElement.appendChild(pieceElement);
+        const piece = document.createElement("div");
+        piece.className = `piece ${square.color === "w" ? "white" : "black"}`;
+        piece.textContent = getPieceUnicode(square.type, square.color);
+        sq.appendChild(piece);
       }
 
-      squareElement.addEventListener("click", () => {
-        const clickedSquare = {
-          row: parseInt(squareElement.dataset.row),
-          col: parseInt(squareElement.dataset.col),
-        };
-        const clickedSquareAlg = getAlgebraic(
-          clickedSquare.row,
-          clickedSquare.col
-        );
-
-        if (!selectedSquareCoords) {
-          if (
-            square &&
-            playerRole &&
-            ((playerRole === "w" && square.color === "w") ||
-              (playerRole === "b" && square.color === "b"))
-          ) {
-            selectedSquareCoords = clickedSquare;
-            renderBoard();
-          }
-        } else {
-          if (
-            selectedSquareCoords.row === clickedSquare.row &&
-            selectedSquareCoords.col === clickedSquare.col
-          ) {
-            selectedSquareCoords = null;
-            renderBoard();
-            return;
-          }
-          if (
-            square &&
-            playerRole &&
-            ((playerRole === "w" && square.color === "w") ||
-              (playerRole === "b" && square.color === "b"))
-          ) {
-            selectedSquareCoords = clickedSquare;
-            renderBoard();
-            return;
-          }
-          if (!legalMoves.includes(clickedSquareAlg)) {
-            return;
-          }
-          handleMove(selectedSquareCoords, clickedSquare);
-          selectedSquareCoords = null;
-          renderBoard();
-        }
-      });
-
-      boardElement.appendChild(squareElement);
+      sq.addEventListener("click", () => handleSquareClick(square, rowIndex, colIndex));
+      boardElement.appendChild(sq);
     });
   });
 
@@ -124,108 +79,92 @@ const renderBoard = () => {
   document.getElementById("resetButton").style.display =
     playerRole === "spectator" ? "none" : "block";
 
+  updateStatus();
   checkGameOver();
 };
 
+// Detect checkmate for modal or final state
 const checkGameOver = () => {
-  if (chess.in_checkmate()) {
-    const winner = chess.turn() === "w" ? "Black" : "White";
-    displayGameOverModal(`Checkmate! ${winner} wins!`);
+  if (chess.game_over()) {
+    if (chess.in_checkmate()) {
+      const winner = chess.turn() === "w" ? "Black" : "White";
+      displayGameOverModal(`Checkmate! ${winner} wins!`);
+    } else if (chess.in_draw()) {
+      displayGameOverModal("Game ended in a draw!");
+    }
   }
 };
 
+// Display game over modal
 const displayGameOverModal = (message) => {
-  // Avoid showing multiple modals
-  if (document.getElementById("gameOverModal")) return;
-
-  const modalOverlay = document.createElement("div");
-  modalOverlay.id = "gameOverModal";
-  modalOverlay.classList.add("modal-overlay");
-
-  const modalContent = document.createElement("div");
-  modalContent.classList.add("modal-content");
-
-  let playAgainButtonHTML = "";
-
-  if (playerRole !== "spectator") {
-    playAgainButtonHTML = `<button id="playAgainButton">Play Again</button>`;
+  // Check if modal already exists
+  let modal = document.getElementById("gameOverModal");
+  
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "gameOverModal";
+    modal.className = "modal";
+    
+    const modalContent = document.createElement("div");
+    modalContent.className = "modal-content";
+    
+    const messageElem = document.createElement("p");
+    messageElem.textContent = message;
+    
+    modalContent.appendChild(messageElem);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+  } else {
+    // Update existing modal message
+    modal.querySelector("p").textContent = message;
   }
+  
+  modal.style.display = "flex";
+};
 
-  modalContent.innerHTML = `
-    <p>${message}</p>
-    ${playAgainButtonHTML}
-  `;
-
-  modalOverlay.appendChild(modalContent);
-  document.body.appendChild(modalOverlay);
-
-  if (playerRole !== "spectator") {
-    document.getElementById("playAgainButton").addEventListener("click", () => {
-      socket.emit("resetGameRequest");
-      roleElement.innerText =
-        "Waiting for the other player to accept the reset request...";
-    });
+// Handle clicking on squares
+const handleSquareClick = (square, row, col) => {
+  if (!selectedSquareCoords) {
+    if (square && playerRole && square.color === playerRole) {
+      selectedSquareCoords = { row, col };
+      renderBoard();
+    }
+  } else {
+    const target = getAlgebraic(row, col);
+    if (legalMoves.includes(target)) {
+      socket.emit("move", {
+        from: getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col),
+        to: target,
+      });
+    }
+    selectedSquareCoords = null;
+    renderBoard();
   }
 };
 
-
-const handleMove = (source, target) => {
-  if (playerRole === "spectator") return;
-
-  const sourceSquare = getAlgebraic(source.row, source.col);
-  const targetSquare = getAlgebraic(target.row, target.col);
-
-  socket.emit("move", { from: sourceSquare, to: targetSquare, promotion: "q" });
-
-  if (resetMessageDisplayed) {
-    resetMessageDisplayed = false;
-    roleElement.innerText = "";
-  }
-};
-
-socket.on("playerRole", function (data) {
+// Socket event handlers
+socket.on("playerRole", (data) => {
   playerRole = data.role;
-  if (playerRole === "w") {
-    roleElement.innerText = "Waiting for another player...";
-  } else if (playerRole === "b") {
-    roleElement.innerText = "Waiting for White player to make their move.";
-  } else if (playerRole === "spectator") {
-    roleElement.innerText = "You are a spectator. Watch the game unfold!";
-  }
+  statusEl.textContent = data.message;
   renderBoard();
 });
 
-socket.on("boardState", function (fen) {
+socket.on("boardState", (fen) => {
   chess.load(fen);
   renderBoard();
-  const currentTurn = chess.turn();
-  if (
-    (playerRole === "w" && currentTurn === "w") ||
-    (playerRole === "b" && currentTurn === "b")
-  ) {
-    roleElement.innerText = "Waiting for other player ....";
-  } else if (playerRole === "spectator") {
-    roleElement.innerText = "You are a spectator. Watch the game unfold!";
-  } else {
-    roleElement.innerText = "Waiting for the other player to make their move.";
-  }
 });
 
-socket.on("gameReset", function (message) {
+socket.on("gameMessage", (message) => {
+  statusEl.innerText = message;
+});
+
+socket.on("gameReset", (message) => {
   chess.reset();
-  roleElement.innerText = message;
+  selectedSquareCoords = null;
+  statusEl.innerText = message;
+  const modal = document.getElementById("gameOverModal");
+  if (modal) modal.remove();
   renderBoard();
-  resetMessageDisplayed = true;
-
-  const existingModal = document.getElementById("gameOverModal");
-  if (existingModal) {
-    document.body.removeChild(existingModal);
-  }
-});
-
-
-socket.on("gameMessage", function (message) {
-  roleElement.innerText = message;
 });
 
 socket.on("gameOver", (message) => {
@@ -234,37 +173,30 @@ socket.on("gameOver", (message) => {
 
 socket.on("resetRequest", () => {
   if (playerRole !== "spectator") {
-    const confirmationDiv = document.createElement("div");
-    confirmationDiv.classList.add("confirmation-container");
-    confirmationDiv.innerHTML = `
-      <p>The other player has requested to reset the game. Do you accept?</p>
+    const confirmDiv = document.createElement("div");
+    confirmDiv.classList.add("confirmation-container");
+    confirmDiv.innerHTML = `
+      <p>Reset request received. Accept?</p>
       <button id="acceptReset">Yes</button>
       <button id="rejectReset">No</button>
     `;
-    document.body.appendChild(confirmationDiv);
+    document.body.appendChild(confirmDiv);
 
     document.getElementById("acceptReset").addEventListener("click", () => {
       socket.emit("resetGameResponse", "accept");
-      document.body.removeChild(confirmationDiv);
+      confirmDiv.remove();
     });
-
     document.getElementById("rejectReset").addEventListener("click", () => {
-      socket.emit("resetGameResponse", "reject");
-      document.body.removeChild(confirmationDiv);
-      roleElement.innerText = "You rejected the reset request.";
+      confirmDiv.remove();
+      statusEl.innerText = "Reset request declined";
     });
   }
 });
 
-const resetGame = () => {
-  if (playerRole !== "spectator" && !resetRequestPending) {
-    resetRequestPending = true;
-    socket.emit("resetGameRequest");
-    roleElement.innerText =
-      "Waiting for the other player to accept the reset request...";
-  }
-};
+document.getElementById("resetButton").addEventListener("click", () => {
+  socket.emit("resetGameRequest");
+  statusEl.innerText = "Waiting for opponent to accept reset...";
+});
 
-document.getElementById("resetButton").addEventListener("click", resetGame);
-
+// Initial render
 renderBoard();
