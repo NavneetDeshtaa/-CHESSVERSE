@@ -86,9 +86,7 @@ io.on("connection", (socket) => {
           io.to(nextPlayer).emit("gameMessage", "Your turn – Make your move!");
         }
         if (waitingPlayer) {
-          io
-            .to(waitingPlayer)
-            .emit("gameMessage", "Waiting for opponent's move…");
+          io.to(waitingPlayer).emit("gameMessage", "Waiting for opponent's move…");
         }
 
         // **Game‑over logic using built‑in methods**
