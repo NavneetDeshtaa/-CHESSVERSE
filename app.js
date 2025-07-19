@@ -47,7 +47,7 @@ io.on("connection", (socket) => {
   } else {
     socket.emit("playerRole", {
       role: "spectator",
-      message: "You are a Spectator. Watching the game.",
+      message: "You are a Spectator. Watch the game unfold.",
     });
   }
 
