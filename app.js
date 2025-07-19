@@ -88,11 +88,8 @@ io.on("connection", (socket) => {
         if (waitingPlayer) {
           io.to(waitingPlayer).emit("gameMessage", "Waiting for opponent's move…");
         }
-
-        // **Game‑over logic using built‑in methods**
         if (chess.game_over()) {
           if (chess.in_checkmate()) {
-            // winner is the side that just moved
             const winner = chess.turn() === "w" ? "Black" : "White";
             io.emit("gameOver", `${winner} wins by checkmate!`);
           } else if (chess.in_draw()) {
