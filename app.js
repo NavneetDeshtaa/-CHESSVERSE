@@ -1,3 +1,4 @@
+// app.js
 const express = require("express");
 const socket = require("socket.io");
 const http = require("http");
@@ -31,23 +32,23 @@ io.on("connection", (socket) => {
     players.white = socket.id;
     socket.emit("playerRole", {
       role: "w",
-      message: "You are White. Make your move!",
+      message: "You are White. Waiting for other player…",
     });
+    socket.emit("gameMessage", "Waiting for Black to join…");
   } else if (!players.black) {
     players.black = socket.id;
     socket.emit("playerRole", {
       role: "b",
-      message: "You are Black. Waiting for White to make the first move.",
+      message: "You are Black. Waiting for White to move…",
     });
-    
-    // Notify white player that black has joined
-    if (players.white) {
-      io.to(players.white).emit("gameMessage", "Black player has joined. Your turn – Make your move!");
-    }
+    io.to(players.white).emit(
+      "gameMessage",
+      "Black has joined. Your turn – Make your move!"
+    );
   } else {
     socket.emit("playerRole", {
       role: "spectator",
-      message: "You are a Spectator. Watch the game unfold!",
+      message: "You are a Spectator. Watching the game.",
     });
   }
 
@@ -56,7 +57,8 @@ io.on("connection", (socket) => {
 
   socket.on("move", (move) => {
     try {
-      const isPlayerTurn = 
+      // enforce turn on server
+      const isPlayerTurn =
         (socket.id === players.white && chess.turn() === "w") ||
         (socket.id === players.black && chess.turn() === "b");
 
@@ -74,25 +76,38 @@ io.on("connection", (socket) => {
       if (result) {
         io.emit("boardState", chess.fen());
 
-        // Update both players about whose turn it is
+        // Notify next/other player
         const nextTurn = chess.turn();
         const nextPlayer = nextTurn === "w" ? players.white : players.black;
         const waitingPlayer = nextTurn === "w" ? players.black : players.white;
-        
+
         if (nextPlayer) {
           io.to(nextPlayer).emit("gameMessage", "Your turn – Make your move!");
         }
-        
         if (waitingPlayer) {
-          io.to(waitingPlayer).emit("gameMessage", "Waiting for opponent's move…");
+          io
+            .to(waitingPlayer)
+            .emit("gameMessage", "Waiting for opponent's move…");
         }
 
+        // **Game‑over logic using built‑in methods**
         if (chess.game_over()) {
           if (chess.in_checkmate()) {
+            // winner is the side that just moved
             const winner = chess.turn() === "w" ? "Black" : "White";
             io.emit("gameOver", `${winner} wins by checkmate!`);
           } else if (chess.in_draw()) {
-            io.emit("gameOver", "Game ended in a draw!");
+            let reason = "Game ended in a draw!";
+            if (chess.in_stalemate()) {
+              reason = "Game ended in a stalemate!";
+            } else if (chess.insufficient_material()) {
+              reason = "Game ended in a draw due to insufficient material!";
+            } else if (chess.in_threefold_repetition()) {
+              reason = "Game ended in a draw by threefold repetition!";
+            } else if (chess.half_moves >= 100) {
+              reason = "Game ended in a draw by the 50-move rule!";
+            }
+            io.emit("gameOver", reason);
           }
         }
       } else {
@@ -100,12 +115,12 @@ io.on("connection", (socket) => {
       }
     } catch (err) {
       console.error("Move error:", err);
-      socket.emit("gameMessage", "Invalid Move.");
+      socket.emit("gameMessage", "Invalid move.");
     }
   });
 
   socket.on("resetGameRequest", () => {
-    const otherPlayer = 
+    const otherPlayer =
       socket.id === players.white ? players.black : players.white;
     if (otherPlayer) {
       io.to(otherPlayer).emit("resetRequest", socket.id);

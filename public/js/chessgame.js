@@ -6,7 +6,6 @@ let playerRole = null;
 let selectedSquareCoords = null;
 let legalMoves = [];
 
-// Map piece types to Unicode
 const getPieceUnicode = (type, color) => {
   const unicodePieces = {
     w: { p: "♙", r: "♖", n: "♘", b: "♗", q: "♕", k: "♔" },
@@ -15,61 +14,53 @@ const getPieceUnicode = (type, color) => {
   return unicodePieces[color][type];
 };
 
-// Convert board indices to algebraic notation
 const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
 
-// Update status text based on turn
 function updateStatus() {
-  if (chess.game_over()) {
-    if (chess.in_draw()) {
-      statusEl.textContent = "Game over - Draw";
-    } else {
-      statusEl.textContent = "Game over - Checkmate";
-    }
+  const gameStatus = chess.getStatus();
+  if (gameStatus.gameOver) {
+    if (gameStatus.draw) statusEl.textContent = "Game over - Draw";
+    else if (gameStatus.checkmate) statusEl.textContent = "Game over - Checkmate";
     return;
   }
-  
   const turn = chess.turn();
-  if (playerRole === turn) {
-    statusEl.textContent = "Your turn – Make your move!";
-  } else if (playerRole === "spectator") {
-    statusEl.textContent = "You are a spectator. Watching the game.";
-  } else if (playerRole) {
-    statusEl.textContent = "Waiting for opponent's move…";
-  }
+  if (playerRole === turn) statusEl.textContent = "Your turn – Make your move!";
+  else if (playerRole === "spectator") statusEl.textContent = "You are a spectator. Watching the game.";
+  else statusEl.textContent = "Waiting for opponent's move…";
 }
 
-// Render the chessboard UI
 const renderBoard = () => {
   boardElement.innerHTML = "";
-  const board = chess.board();
+  const boardArray = [];
+  for (let i = 0; i < 8; i++) {
+    boardArray[i] = [];
+    for (let j = 0; j < 8; j++) {
+      boardArray[i][j] = chess.get(getAlgebraic(i, j));
+    }
+  }
 
   legalMoves = selectedSquareCoords
-    ? chess.moves({ square: getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col), verbose: true })
-        .map(m => m.to)
+    ? chess.moves({ square: getAlgebraic(selectedSquareCoords.row, selectedSquareCoords.col), verbose: true }).map(m => m.to)
     : [];
 
-  board.forEach((row, rowIndex) => {
+  boardArray.forEach((row, rowIndex) => {
     row.forEach((square, colIndex) => {
       const sq = document.createElement("div");
       sq.className = `square ${(rowIndex + colIndex) % 2 === 0 ? "light" : "dark"}`;
       sq.dataset.row = rowIndex;
       sq.dataset.col = colIndex;
-
       if (selectedSquareCoords?.row === rowIndex && selectedSquareCoords?.col === colIndex) {
         sq.classList.add("selected");
       }
       if (legalMoves.includes(getAlgebraic(rowIndex, colIndex))) {
         sq.classList.add("legal-move");
       }
-
       if (square) {
         const piece = document.createElement("div");
         piece.className = `piece ${square.color === "w" ? "white" : "black"}`;
         piece.textContent = getPieceUnicode(square.type, square.color);
         sq.appendChild(piece);
       }
-
       sq.addEventListener("click", () => handleSquareClick(square, rowIndex, colIndex));
       boardElement.appendChild(sq);
     });
@@ -83,47 +74,49 @@ const renderBoard = () => {
   checkGameOver();
 };
 
-// Detect checkmate for modal or final state
 const checkGameOver = () => {
-  if (chess.game_over()) {
-    if (chess.in_checkmate()) {
-      const winner = chess.turn() === "w" ? "Black" : "White";
-      displayGameOverModal(`Checkmate! ${winner} wins!`);
-    } else if (chess.in_draw()) {
-      displayGameOverModal("Game ended in a draw!");
-    }
+  const gameStatus = chess.getStatus();
+  if (!gameStatus.gameOver) return;
+  let message;
+  if (gameStatus.checkmate) {
+    const winner = chess.turn() === "w" ? "Black" : "White";
+    message = `Checkmate! ${winner} wins!`;
+  } else {
+    if (gameStatus.stalemate) message = "Game ended in a stalemate!";
+    else if (gameStatus.insufficientMaterial) message = "Draw due to insufficient material!";
+    else if (gameStatus.threefoldRepetition) message = "Draw by threefold repetition!";
+    else if (gameStatus.fiftyMoves) message = "Draw by the 50-move rule!";
+    else message = "Game ended in a draw!";
   }
+  displayGameOverModal(message);
 };
 
-// Display game over modal
 const displayGameOverModal = (message) => {
-  // Check if modal already exists
   let modal = document.getElementById("gameOverModal");
-  
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "gameOverModal";
     modal.className = "modal";
-    
     const modalContent = document.createElement("div");
     modalContent.className = "modal-content";
-    
     const messageElem = document.createElement("p");
     messageElem.textContent = message;
-    
     modalContent.appendChild(messageElem);
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
   } else {
-    // Update existing modal message
     modal.querySelector("p").textContent = message;
   }
-  
   modal.style.display = "flex";
 };
 
-// Handle clicking on squares
 const handleSquareClick = (square, row, col) => {
+  // **TURN ENFORCEMENT:** block if it's not your turn (including spectators)
+  if (playerRole !== chess.turn()) {
+    statusEl.textContent = "Not your turn. Wait for opponent.";
+    return;
+  }
+
   if (!selectedSquareCoords) {
     if (square && playerRole && square.color === playerRole) {
       selectedSquareCoords = { row, col };
@@ -142,7 +135,7 @@ const handleSquareClick = (square, row, col) => {
   }
 };
 
-// Socket event handlers
+// Socket events
 socket.on("playerRole", (data) => {
   playerRole = data.role;
   statusEl.textContent = data.message;
@@ -181,7 +174,6 @@ socket.on("resetRequest", () => {
       <button id="rejectReset">No</button>
     `;
     document.body.appendChild(confirmDiv);
-
     document.getElementById("acceptReset").addEventListener("click", () => {
       socket.emit("resetGameResponse", "accept");
       confirmDiv.remove();
