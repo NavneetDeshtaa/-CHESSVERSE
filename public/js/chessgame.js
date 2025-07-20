@@ -25,7 +25,7 @@ function updateStatus() {
   }
   const turn = chess.turn();
   if (playerRole === turn) statusEl.textContent = "Your turn – Make your move!";
-  else if (playerRole === "spectator") statusEl.textContent = "You are a spectator. Watching the game.";
+  else if (playerRole === "spectator") statusEl.textContent = "You are a spectator. Watch the game unfold.";
   else statusEl.textContent = "Waiting for opponent's move…";
 }
 
