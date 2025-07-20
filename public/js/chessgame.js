@@ -16,17 +16,13 @@ const getPieceUnicode = (type, color) => {
 
 const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
 
+// **REMOVED ALL LOCAL MESSAGE UPDATES FROM updateStatus**
 function updateStatus() {
+  // We'll just use this for gameOver check to display modal
   const gameStatus = chess.getStatus();
   if (gameStatus.gameOver) {
-    if (gameStatus.draw) Message.textContent = "Game over - Draw";
-    else if (gameStatus.checkmate) Message.textContent = "Game over - Checkmate";
-    return;
+    // Client shows modal on gameOver event, so no need to update Message here
   }
-  const turn = chess.turn();
-  if (playerRole === turn) Message.textContent = "Your turn – Make your move!";
-  else if (playerRole === "spectator") Message.textContent = "You are a spectator. Watch the game unfold.";
-  else Message.textContent = "Waiting for opponent's move…";
 }
 
 const renderBoard = () => {
@@ -71,24 +67,12 @@ const renderBoard = () => {
     playerRole === "spectator" ? "none" : "block";
 
   updateStatus();
-  checkGameOver();
+  // Removed checkGameOver from renderBoard to avoid local modal triggering
+  // Client only shows modal when receiving gameOver event from server
 };
 
 const checkGameOver = () => {
-  const gameStatus = chess.getStatus();
-  if (!gameStatus.gameOver) return;
-  let message;
-  if (gameStatus.checkmate) {
-    const winner = chess.turn() === "w" ? "Black" : "White";
-    message = `Checkmate! ${winner} wins!`;
-  } else {
-    if (gameStatus.stalemate) message = "Game ended in a stalemate!";
-    else if (gameStatus.insufficientMaterial) message = "Draw due to insufficient material!";
-    else if (gameStatus.threefoldRepetition) message = "Draw by threefold repetition!";
-    else if (gameStatus.fiftyMoves) message = "Draw by the 50-move rule!";
-    else message = "Game ended in a draw!";
-  }
-  displayGameOverModal(message);
+  // This function is now unused since server sends gameOver event
 };
 
 const displayGameOverModal = (message) => {
@@ -111,9 +95,9 @@ const displayGameOverModal = (message) => {
 };
 
 const handleSquareClick = (square, row, col) => {
-  // **TURN ENFORCEMENT:** block if it's not your turn (including spectators)
+  // Enforce turn using playerRole and chess.turn()
   if (playerRole !== chess.turn()) {
-    Message.textContent = "Not your turn. Wait for opponent.";
+    // Instead of local message, rely on server for "Not your turn" message
     return;
   }
 
@@ -136,9 +120,10 @@ const handleSquareClick = (square, row, col) => {
 };
 
 // Socket events
+
 socket.on("playerRole", (data) => {
   playerRole = data.role;
-  Message.textContent = data.message;
+  Message.textContent = data.message; // Initial role message
   renderBoard();
 });
 
@@ -148,6 +133,7 @@ socket.on("boardState", (fen) => {
 });
 
 socket.on("gameMessage", (message) => {
+  // **ONLY place where Message.textContent changes for status**
   Message.innerText = message;
 });
 
