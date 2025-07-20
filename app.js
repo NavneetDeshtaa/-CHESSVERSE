@@ -6,6 +6,7 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
+// const io = socket(server);
 
 const io = socket(server, {
   cors: {
@@ -50,7 +51,6 @@ io.on("connection", (socket) => {
       role: "spectator",
       message: "You are a Spectator. Watch the game unfold.",
     });
-    socket.emit("gameMessage", "You are watching the game.");
   }
 
   // Send initial board state
@@ -89,7 +89,7 @@ io.on("connection", (socket) => {
           io.to(waitingPlayer).emit("gameMessage", "Waiting for opponent's move…");
         }
 
-        // Game-over logic
+        // **Game‑over logic using built‑in methods**
         if (chess.game_over()) {
           if (chess.in_checkmate()) {
             // winner is the side that just moved
