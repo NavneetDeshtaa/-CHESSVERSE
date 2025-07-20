@@ -1,7 +1,7 @@
 const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
-const statusEl = document.getElementById("role");
+const Message = document.getElementById("role");
 let playerRole = null;
 let selectedSquareCoords = null;
 let legalMoves = [];
@@ -19,14 +19,14 @@ const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
 function updateStatus() {
   const gameStatus = chess.getStatus();
   if (gameStatus.gameOver) {
-    if (gameStatus.draw) statusEl.textContent = "Game over - Draw";
-    else if (gameStatus.checkmate) statusEl.textContent = "Game over - Checkmate";
+    if (gameStatus.draw) Message.textContent = "Game over - Draw";
+    else if (gameStatus.checkmate) Message.textContent = "Game over - Checkmate";
     return;
   }
   const turn = chess.turn();
-  if (playerRole === turn) statusEl.textContent = "Your turn – Make your move!";
-  else if (playerRole === "spectator") statusEl.textContent = "You are a spectator. Watch the game unfold.";
-  else statusEl.textContent = "Waiting for opponent's move…";
+  if (playerRole === turn) Message.textContent = "Your turn – Make your move!";
+  else if (playerRole === "spectator") Message.textContent = "You are a spectator. Watch the game unfold.";
+  else Message.textContent = "Waiting for opponent's move…";
 }
 
 const renderBoard = () => {
@@ -113,7 +113,7 @@ const displayGameOverModal = (message) => {
 const handleSquareClick = (square, row, col) => {
   // **TURN ENFORCEMENT:** block if it's not your turn (including spectators)
   if (playerRole !== chess.turn()) {
-    statusEl.textContent = "Not your turn. Wait for opponent.";
+    Message.textContent = "Not your turn. Wait for opponent.";
     return;
   }
 
@@ -138,7 +138,7 @@ const handleSquareClick = (square, row, col) => {
 // Socket events
 socket.on("playerRole", (data) => {
   playerRole = data.role;
-  statusEl.textContent = data.message;
+  Message.textContent = data.message;
   renderBoard();
 });
 
@@ -148,13 +148,13 @@ socket.on("boardState", (fen) => {
 });
 
 socket.on("gameMessage", (message) => {
-  statusEl.innerText = message;
+  Message.innerText = message;
 });
 
 socket.on("gameReset", (message) => {
   chess.reset();
   selectedSquareCoords = null;
-  statusEl.innerText = message;
+  Message.innerText = message;
   const modal = document.getElementById("gameOverModal");
   if (modal) modal.remove();
   renderBoard();
@@ -180,14 +180,14 @@ socket.on("resetRequest", () => {
     });
     document.getElementById("rejectReset").addEventListener("click", () => {
       confirmDiv.remove();
-      statusEl.innerText = "Reset request declined";
+      Message.innerText = "Reset request declined";
     });
   }
 });
 
 document.getElementById("resetButton").addEventListener("click", () => {
   socket.emit("resetGameRequest");
-  statusEl.innerText = "Waiting for opponent to accept reset...";
+  Message.innerText = "Waiting for opponent to accept reset...";
 });
 
 // Initial render
