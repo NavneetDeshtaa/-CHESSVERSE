@@ -6,14 +6,14 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = socket(server);
+// const io = socket(server);
 
-// const io = socket(server, {
-//   cors: {
-//     origin: "https://chess-game-1mz3.onrender.com",
-//     methods: ["GET", "POST"],
-//   },
-// });
+const io = socket(server, {
+  cors: {
+    origin: "https://chess-game-1mz3.onrender.com",
+    methods: ["GET", "POST"],
+  },
+});
 
 let chess = new Chess();
 let players = {};
