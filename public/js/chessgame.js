@@ -125,8 +125,8 @@ socket.on("resetRequest", () => {
     confirmDiv.remove();
   });
   document.getElementById("rejectReset").addEventListener("click", () => {
+    socket.emit("resetGameResponse", "reject");
     confirmDiv.remove();
-    Message.innerText = "Reset request declined";
   });
 });
 

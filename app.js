@@ -85,6 +85,9 @@ io.on("connection", (socket) => {
       io.emit("boardState", chess.fen());
       io.emit("gameReset", "The game has been reset.");
     }
+    else if(response == "reject"){
+       io.emit("gameMessage", "Reset Request Rejected. Continue playing ")
+    }
   });
 
   socket.on("disconnect", () => {
