@@ -11,7 +11,7 @@ const getPieceUnicode = (type, color) => ({
   b: { p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚" },
 })[color][type];
 
-const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
+// const getAlgebraic = (row, col) => `${String.fromCharCode(97 + col)}${8 - row}`;
 
 const renderBoard = () => {
   boardElement.innerHTML = "";
