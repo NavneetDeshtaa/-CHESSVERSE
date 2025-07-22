@@ -22,6 +22,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => res.render("index", { title: "Chess Game" }));
 
+//sockets -----> 
+
 io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
 
