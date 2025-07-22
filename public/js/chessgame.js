@@ -131,7 +131,16 @@ socket.on("resetRequest", () => {
 });
 
 document.getElementById("resetButton").addEventListener("click", () => {
+  const resetButton = document.getElementById("resetButton");
+
+  resetButton.disabled = true;
+  resetButton.textContent = "Request Sent. Try Again After Sometime";
   socket.emit("resetGameRequest");
+
+  setTimeout(() => {
+    resetButton.disabled = false;
+    resetButton.textContent = "Reset Game";
+  }, 6000);
 });
 
 renderBoard();
