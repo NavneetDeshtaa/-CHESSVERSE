@@ -140,7 +140,7 @@ document.getElementById("resetButton").addEventListener("click", () => {
   setTimeout(() => {
     resetButton.disabled = false;
     resetButton.textContent = "Reset Game";
-  }, 6600);
+  }, 6000);
 });
 
 renderBoard();
